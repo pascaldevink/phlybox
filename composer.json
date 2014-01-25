@@ -1,0 +1,21 @@
+{
+    "name": "pascaldevink/phlybox",
+    "type": "application",
+    "description": "Phlybox",
+    "keywords": [],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Pascal de Vink",
+            "email": "pascal@amsterdamphp.nl"
+        }
+    ],
+    "require": {
+        "php": ">=5.4",
+        "symfony/console": "2.4.*"
+    },
+    "autoload": {
+        "psr-0": { "pascaldevink\\Phlybox\\": "src" }
+    },
+    "minimum-stability": "dev"
+}
