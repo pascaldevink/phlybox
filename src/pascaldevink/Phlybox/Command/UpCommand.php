@@ -4,6 +4,7 @@ namespace pascaldevink\Phlybox\Command;
 
 use pascaldevink\Phlybox\Service\GithubRepositoryService;
 use pascaldevink\Phlybox\Service\SlackNotificationService;
+use pascaldevink\Phlybox\Service\SqliteStorageService;
 use pascaldevink\Phlybox\Service\VagrantService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Formatter\OutputFormatter;
@@ -46,7 +47,7 @@ class UpCommand extends Command
     {
         $vcsRepositoryService = new GithubRepositoryService();
         $vagrantService = new VagrantService();
-        $notificationService = new SlackNotificationService('autotrack', 'fMxE9J6BYNerp3pnKd8bE9TY', '#deploys', 'phlybox');
+        $metaStorageService = new SqliteStorageService();
 
         $output->setDecorated(true);
         $output->setFormatter(new OutputFormatter(true, array(
@@ -60,6 +61,9 @@ class UpCommand extends Command
         $repository = $input->getArgument('repository');
         $baseBranch = $input->getArgument('baseBranch');
         $prNumber = $input->getArgument('prNumber');
+
+        $id = $metaStorageService->addBox($repositoryOwner, $repository, $baseBranch, $prNumber);
+        var_dump($id);die();
 
         $output->writeln('<info>Cloning...</info>');
         $vcsRepositoryService->checkoutRepository($repositoryOwner, $repository, $boxName);
@@ -78,8 +82,6 @@ class UpCommand extends Command
         $vagrantService->vagrantUp($boxName, $boxIp);
 
         $output->writeln("<info>Box is up at: http://$boxIp</info>");
-
-        $notificationService->notify("Box is up for $prUrl at: http://$boxIp");
     }
 
     protected function getPRUrlFromPRInfo($prInfoOutput)
