@@ -44,7 +44,8 @@ class SqliteStorageService implements MetaStorageService
      */
     public function setBoxStatus($boxId, $status)
     {
-        // TODO: Implement setBoxStatus() method.
+        $databaseHandle = $this->getDatabaseHandle();
+        $databaseHandle->exec("UPDATE box (status) VALUES ($status) WHERE rowid = $boxId");
     }
 
     /**
@@ -100,7 +101,7 @@ class SqliteStorageService implements MetaStorageService
             return self::$databaseHandle;
         }
 
-        $filename = 'meta.sql';
+        $filename = 'meta.db';
         $sqlExists = false;
 
         if (file_exists($filename)) {

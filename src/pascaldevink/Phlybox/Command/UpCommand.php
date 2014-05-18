@@ -2,6 +2,7 @@
 
 namespace pascaldevink\Phlybox\Command;
 
+use pascaldevink\Phlybox\Service\BoxStatus;
 use pascaldevink\Phlybox\Service\GithubRepositoryService;
 use pascaldevink\Phlybox\Service\SlackNotificationService;
 use pascaldevink\Phlybox\Service\SqliteStorageService;
@@ -63,10 +64,11 @@ class UpCommand extends Command
         $prNumber = $input->getArgument('prNumber');
 
         $id = $metaStorageService->addBox($repositoryOwner, $repository, $baseBranch, $prNumber);
-        var_dump($id);die();
 
         $output->writeln('<info>Cloning...</info>');
+        $metaStorageService->setBoxStatus($id, BoxStatus::STATUS_CLONING);
         $vcsRepositoryService->checkoutRepository($repositoryOwner, $repository, $boxName);
+
         $output->writeln('<info>Branching...</info>');
         $vcsRepositoryService->setRepositoryBranch($boxName, $baseBranch);
 
@@ -76,12 +78,15 @@ class UpCommand extends Command
         $prBranch = $this->getPRBranchFromPRInfo($prInfoOutput);
 
         $output->writeln('<info>Pulling...</info>');
+        $metaStorageService->setBoxStatus($id, BoxStatus::STATUS_MERGING);
         $vcsRepositoryService->pullInPullRequest($boxName, $baseBranch, $prUrl, $prBranch);
 
         $output->writeln("<info>Getting the vagrant box up and running on IP: $boxIp</info>");
+        $metaStorageService->setBoxStatus($id, BoxStatus::STATUS_BOOTING);
         $vagrantService->vagrantUp($boxName, $boxIp);
 
-        $output->writeln("<info>Box is up at: http://$boxIp</info>");
+        $metaStorageService->setBoxStatus($id, BoxStatus::STATUS_READY);
+        $output->writeln("<info>Box is up at: http://$boxIp with ID: $id</info>");
     }
 
     protected function getPRUrlFromPRInfo($prInfoOutput)
