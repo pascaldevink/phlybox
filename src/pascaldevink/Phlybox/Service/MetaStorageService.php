@@ -7,6 +7,7 @@ interface MetaStorageService
     /**
      * Adds a box to the meta storage and returns the identifier.
      *
+     * @param string $name
      * @param string $repositoryOwner
      * @param string $repositoryName
      * @param string $branch
@@ -14,7 +15,7 @@ interface MetaStorageService
      *
      * @return int
      */
-    public function addBox($repositoryOwner, $repositoryName, $branch, $prNumber);
+    public function addBox($name, $repositoryOwner, $repositoryName, $branch, $prNumber);
 
     /**
      * Sets the status of the box with the given id.
@@ -42,4 +43,16 @@ interface MetaStorageService
      * @return array
      */
     public function getAllBoxes();
+
+    /**
+     * Returns the box with the given identifier.
+     * If the box does not exist, an exception is thrown.
+     *
+     * @param int $id
+     *
+     * @throws \Exception
+     *
+     * @return array
+     */
+    public function getBoxByIdentifier($id);
 } 

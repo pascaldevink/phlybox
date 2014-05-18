@@ -20,4 +20,10 @@ class VagrantService
         $command = "cd $boxName && IP=$boxIp vagrant up --provision";
         system($command);
     }
+
+    public function vagrantHalt($boxName)
+    {
+        $command = "cd $boxName && vagrant halt";
+        system($command);
+    }
 } 

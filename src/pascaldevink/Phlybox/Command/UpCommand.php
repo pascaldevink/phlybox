@@ -63,7 +63,7 @@ class UpCommand extends Command
         $baseBranch = $input->getArgument('baseBranch');
         $prNumber = $input->getArgument('prNumber');
 
-        $id = $metaStorageService->addBox($repositoryOwner, $repository, $baseBranch, $prNumber);
+        $id = $metaStorageService->addBox($boxName, $repositoryOwner, $repository, $baseBranch, $prNumber);
 
         $output->writeln('<info>Cloning...</info>');
         $metaStorageService->setBoxStatus($id, BoxStatus::STATUS_CLONING);

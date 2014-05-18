@@ -9,21 +9,21 @@ class SqliteStorageService implements MetaStorageService
     /**
      * Adds a box to the meta storage and returns the identifier.
      *
+     * @param string $name
      * @param string $repositoryOwner
      * @param string $repositoryName
      * @param string $branch
      * @param int $prNumber
      *
      * @throws \Exception
-     *
      * @return int
      */
-    public function addBox($repositoryOwner, $repositoryName, $branch, $prNumber)
+    public function addBox($name, $repositoryOwner, $repositoryName, $branch, $prNumber)
     {
         $baseStatus = BoxStatus::STATUS_CLONING;
 
         $databaseHandle = $this->getDatabaseHandle();
-        $result = $databaseHandle->exec("INSERT INTO box (repositoryOwner, repositoryName, branch, prNumber, status) VALUES ('$repositoryOwner', '$repositoryName', '$branch', $prNumber, $baseStatus)");
+        $result = $databaseHandle->exec("INSERT INTO box (boxName, repositoryOwner, repositoryName, branch, prNumber, status) VALUES ('$name', ''$repositoryOwner', '$repositoryName', '$branch', $prNumber, $baseStatus)");
 
         if ($result === false) {
             throw new \Exception('Something went wrong whiles saving the meta data');
@@ -69,7 +69,7 @@ class SqliteStorageService implements MetaStorageService
     {
         $databaseHandler = $this->getDatabaseHandle();
 
-        $statement = $databaseHandler->prepare("SELECT rowid, repositoryOwner, repositoryName, branch, prNumber, status FROM box");
+        $statement = $databaseHandler->prepare("SELECT rowid, boxName, repositoryOwner, repositoryName, branch, prNumber, status FROM box");
         $result = $statement->execute();
 
         $resultArray = array();
@@ -77,6 +77,7 @@ class SqliteStorageService implements MetaStorageService
         while ($res = $result->fetchArray(SQLITE3_ASSOC)) {
             $box = array(
                 'id'                => $res['rowid'],
+                'boxName'           => $res['boxName'],
                 'repositoryOwner'   => $res['repositoryOwner'],
                 'repositoryName'    => $res['repositoryName'],
                 'branch'            => $res['branch'],
@@ -88,6 +89,33 @@ class SqliteStorageService implements MetaStorageService
         }
 
         return $resultArray;
+    }
+
+    /**
+     * Returns the box with the given identifier.
+     * If the box does not exist, an exception is thrown.
+     *
+     * @param int $id
+     *
+     * @throws \Exception
+     *
+     * @return array
+     */
+    public function getBoxByIdentifier($id)
+    {
+        $databaseHandler = $this->getDatabaseHandle();
+
+        $statement = $databaseHandler->prepare("SELECT rowid, boxName, repositoryOwner, repositoryName, branch, prNumber, status FROM box WHERE rowid = :id");
+        $statement->bindParam(':id', $id, SQLITE3_INTEGER);
+        $result = $statement->execute();
+
+        $resultBox = $result->fetchArray(SQLITE3_ASSOC);
+
+        if ($resultBox === false) {
+            throw new \Exception("Box with identifier '$id' not found");
+        }
+
+        return $resultBox;
     }
 
     /**

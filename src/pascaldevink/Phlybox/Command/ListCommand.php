@@ -32,11 +32,12 @@ class ListCommand extends Command
 
         $boxes = $metaStorageService->getAllBoxes();
 
-        $output->writeln('<info>ID | Repository owner | Repository | Branch | PR | Status</info>');
+        $output->writeln('<info>ID | Box name | Repository owner | Repository | Branch | PR | Status</info>');
 
         foreach($boxes as $box) {
-            $outputLine = $box['id'] . ' | ' . $box['repositoryOwner'] . ' | ' . $box['repositoryName'] .
-                ' | ' . $box['branch'] . ' | ' . $box['prNumber'] . ' | ' . BoxStatus::getStatusByNumber($box['status']);
+            $outputLine = $box['id'] . ' | ' . $box['boxName'] . ' | ' . $box['repositoryOwner'] . ' | ' .
+                $box['repositoryName'] . ' | ' . $box['branch'] . ' | ' . $box['prNumber'] . ' | ' .
+                BoxStatus::getStatusByNumber($box['status']);
 
             $output->writeln($outputLine);
         }
