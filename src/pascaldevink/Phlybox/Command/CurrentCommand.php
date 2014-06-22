@@ -11,12 +11,12 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ListCommand extends Command
+class CurrentCommand extends Command
 {
     protected function configure()
     {
         $this
-            ->setName('phlybox:list')
+            ->setName('current')
             ->setDescription('Lists the currently running environment')
         ;
     }

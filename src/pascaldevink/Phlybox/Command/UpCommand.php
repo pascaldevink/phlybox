@@ -21,7 +21,7 @@ class UpCommand extends Command
     protected function configure()
     {
         $this
-            ->setName('phlybox:up')
+            ->setName('up')
             ->setDescription('Bring up a new environment')
             ->addArgument(
                 'repositoryOwner',

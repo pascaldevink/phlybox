@@ -17,7 +17,7 @@ class DownCommand extends Command
     protected function configure()
     {
         $this
-            ->setName('phlybox:down')
+            ->setName('down')
             ->setDescription('Bring down an environment')
             ->addArgument(
                 'id',

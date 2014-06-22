@@ -129,7 +129,7 @@ class SqliteStorageService implements MetaStorageService
             return self::$databaseHandle;
         }
 
-        $filename = 'meta.db';
+        $filename = 'phlybox.db';
         $sqlExists = false;
 
         if (file_exists($filename)) {
