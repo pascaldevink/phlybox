@@ -38,14 +38,14 @@ class SqliteStorageService implements MetaStorageService
      * Status can be any of the constants in this interface.
      *
      * @param int $boxId
-     * @param string $status
+     * @param int $status
      *
      * @return void
      */
     public function setBoxStatus($boxId, $status)
     {
         $databaseHandle = $this->getDatabaseHandle();
-        $databaseHandle->exec("UPDATE box (status) VALUES ('$status') WHERE rowid = $boxId");
+        $databaseHandle->exec("UPDATE box SET status = $status WHERE rowid = $boxId");
     }
 
     /**

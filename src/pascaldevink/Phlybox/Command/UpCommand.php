@@ -3,8 +3,9 @@
 namespace pascaldevink\Phlybox\Command;
 
 use pascaldevink\Phlybox\Service\BoxStatus;
+use pascaldevink\Phlybox\Service\ConfigReaderService;
 use pascaldevink\Phlybox\Service\GithubRepositoryService;
-use pascaldevink\Phlybox\Service\SlackNotificationService;
+use pascaldevink\Phlybox\Service\NotificationServiceFactory;
 use pascaldevink\Phlybox\Service\SqliteStorageService;
 use pascaldevink\Phlybox\Service\VagrantService;
 use pascaldevink\Phlybox\Service\YamlConfigReaderService;
@@ -91,6 +92,8 @@ class UpCommand extends Command
 
         $metaStorageService->setBoxStatus($id, BoxStatus::STATUS_READY);
         $output->writeln("<info>Box is up at: http://$boxIp with ID: $id</info>");
+
+        $this->notify($configurationReaderService, $boxIp, $id);
     }
 
     protected function getPRUrlFromPRInfo($prInfoOutput)
@@ -101,5 +104,25 @@ class UpCommand extends Command
     protected function getPRBranchFromPRInfo($prInfoOutput)
     {
         return $prInfoOutput->head->ref;
+    }
+
+    /**
+     * @param ConfigReaderService $configurationReaderService
+     * @param $boxIp
+     * @param $id
+     */
+    protected function notify(ConfigReaderService $configurationReaderService, $boxIp, $id)
+    {
+        $notificationServiceConfiguration = $configurationReaderService->getNotificationService();
+        if ($notificationServiceConfiguration === false) {
+            return;
+        }
+
+        $notificationService = NotificationServiceFactory::generate(
+            $notificationServiceConfiguration['serviceName'],
+            $notificationServiceConfiguration['serviceConfiguration']
+        );
+
+        $notificationService->notify("Box is up at: http://$boxIp with ID: $id");
     }
 }

@@ -1,1 +1,7 @@
 ip_base: 10.0.0.0/8
+
+notification: slack
+slack_team: autotrack
+slack_token: TbXug15u96QB26Q4H6QgCbGs
+slack_channel: \#test
+slack_username: phlybox

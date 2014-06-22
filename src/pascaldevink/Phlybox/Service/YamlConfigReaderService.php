@@ -30,4 +30,33 @@ class YamlConfigReaderService implements ConfigReaderService
         $configuration = $this->getConfiguration();
         return $configuration['ip_base'];
     }
+
+    /**
+     * Returns the configured notification service with the bundled service configuration, or false if none is
+     * configured.
+     *
+     * @return array|bool
+     */
+    public function getNotificationService()
+    {
+        $configuration = $this->getConfiguration();
+
+        if (! isset($configuration['notification'])) {
+            return false;
+        }
+
+        $serviceName = $configuration['notification'];
+        $serviceConfiguration = array();
+
+        foreach($configuration as $key => $value) {
+            if (strpos($key, $serviceName) === 0) {
+                $serviceConfiguration[$key] = $value;
+            }
+        }
+
+        return array(
+            'serviceName'           => $serviceName,
+            'serviceConfiguration'  => $serviceConfiguration,
+        );
+    }
 }
