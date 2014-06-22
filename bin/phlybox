@@ -13,7 +13,7 @@ use pascaldevink\Phlybox\Command\CurrentCommand;
 use pascaldevink\Phlybox\Command\UpCommand;
 use Symfony\Component\Console\Application;
 
-$application = new Application();
+$application = new Application('Phlybox', '1.0-DEV');
 $application->add(new UpCommand());
 $application->add(new DownCommand());
 $application->add(new CurrentCommand());

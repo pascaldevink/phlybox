@@ -1,5 +1,16 @@
 {
     "chmod": "0755",
+    "banner": "Phlybox",
+    "blacklist": [
+        "box.json",
+        "box.phar",
+        "composer.json",
+        "composer.lock",
+        "composer.phar",
+        "phlybox.db",
+        "phlybox.phar",
+        "phlybox.yml"
+    ],
     "directories": [
         "src"
     ],
