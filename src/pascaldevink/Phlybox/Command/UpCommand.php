@@ -7,6 +7,7 @@ use pascaldevink\Phlybox\Service\GithubRepositoryService;
 use pascaldevink\Phlybox\Service\SlackNotificationService;
 use pascaldevink\Phlybox\Service\SqliteStorageService;
 use pascaldevink\Phlybox\Service\VagrantService;
+use pascaldevink\Phlybox\Service\YamlConfigReaderService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Formatter\OutputFormatter;
 use Symfony\Component\Console\Formatter\OutputFormatterStyle;
@@ -46,6 +47,9 @@ class UpCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $configurationReaderService = new YamlConfigReaderService();
+        $ipBase = $configurationReaderService->getIpBase();
+
         $vcsRepositoryService = new GithubRepositoryService();
         $vagrantService = new VagrantService();
         $metaStorageService = new SqliteStorageService();
@@ -56,7 +60,7 @@ class UpCommand extends Command
         )));
 
         $boxName = $vagrantService->generateBoxName();
-        $boxIp = $vagrantService->generateBoxIp();
+        $boxIp = $vagrantService->generateBoxIp($ipBase);
 
         $repositoryOwner = $input->getArgument('repositoryOwner');
         $repository = $input->getArgument('repository');
@@ -98,4 +102,4 @@ class UpCommand extends Command
     {
         return $prInfoOutput->head->ref;
     }
-} 
+}

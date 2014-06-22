@@ -23,7 +23,7 @@ class SqliteStorageService implements MetaStorageService
         $baseStatus = BoxStatus::STATUS_CLONING;
 
         $databaseHandle = $this->getDatabaseHandle();
-        $result = $databaseHandle->exec("INSERT INTO box (boxName, repositoryOwner, repositoryName, branch, prNumber, status) VALUES ('$name', ''$repositoryOwner', '$repositoryName', '$branch', $prNumber, $baseStatus)");
+        $result = $databaseHandle->exec("INSERT INTO box (boxName, repositoryOwner, repositoryName, branch, prNumber, status) VALUES ('$name', '$repositoryOwner', '$repositoryName', '$branch', $prNumber, $baseStatus)");
 
         if ($result === false) {
             throw new \Exception('Something went wrong whiles saving the meta data');
@@ -45,7 +45,7 @@ class SqliteStorageService implements MetaStorageService
     public function setBoxStatus($boxId, $status)
     {
         $databaseHandle = $this->getDatabaseHandle();
-        $databaseHandle->exec("UPDATE box (status) VALUES ($status) WHERE rowid = $boxId");
+        $databaseHandle->exec("UPDATE box (status) VALUES ('$status') WHERE rowid = $boxId");
     }
 
     /**
@@ -139,7 +139,7 @@ class SqliteStorageService implements MetaStorageService
         $sqlLite = new \SQLite3($filename);
 
         if (! $sqlExists) {
-            $sqlLite->exec('CREATE TABLE box (repositoryOwner STRING, repositoryName STRING, branch STRING, prNumber INT, status INT)');
+            $sqlLite->exec('CREATE TABLE box (boxName STRING, repositoryOwner STRING, repositoryName STRING, branch STRING, prNumber INT, status INT)');
         }
 
         self::$databaseHandle = $sqlLite;
