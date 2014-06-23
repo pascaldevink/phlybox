@@ -15,6 +15,7 @@ use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Process\Process;
 
 class UpCommand extends Command
 {
@@ -81,7 +82,10 @@ class UpCommand extends Command
         $metaStorageService->setBoxStatus($id, BoxStatus::STATUS_MERGING);
         $vcsRepositoryService->pullInPullRequest($boxName, $baseBranch, $prUrl, $prBranch);
 
-        $configurationReaderService = new YamlConfigReaderService(__DIR__ . '/' . $boxName);
+        $process = new Process("pwd");
+        $process->run();
+        $currentDirectory = trim($process->getOutput());
+        $configurationReaderService = new YamlConfigReaderService($currentDirectory . '/' . $boxName);
         $ipBase = $configurationReaderService->getIpBase();
         $boxIp = $vagrantService->generateBoxIp($ipBase);
 
