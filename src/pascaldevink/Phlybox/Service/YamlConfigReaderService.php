@@ -6,6 +6,12 @@ use Symfony\Component\Yaml\Parser;
 
 class YamlConfigReaderService implements ConfigReaderService
 {
+    private $workingDirectory;
+
+    public function __construct($workingDirectory)
+    {
+        $this->workingDirectory = $workingDirectory;
+    }
 
     /**
      * Returns all configuration options as an array.
@@ -15,7 +21,7 @@ class YamlConfigReaderService implements ConfigReaderService
     public function getConfiguration()
     {
         $yaml = new Parser();
-        $value = $yaml->parse(file_get_contents('phlybox.yml'));
+        $value = $yaml->parse(file_get_contents($this->workingDirectory . '/phlybox.yml'));
 
         return $value;
     }

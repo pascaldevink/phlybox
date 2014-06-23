@@ -48,9 +48,6 @@ class UpCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $configurationReaderService = new YamlConfigReaderService();
-        $ipBase = $configurationReaderService->getIpBase();
-
         $vcsRepositoryService = new GithubRepositoryService();
         $vagrantService = new VagrantService();
         $metaStorageService = new SqliteStorageService();
@@ -60,13 +57,11 @@ class UpCommand extends Command
             'info' => new OutputFormatterStyle('green')
         )));
 
-        $boxName = $vagrantService->generateBoxName();
-        $boxIp = $vagrantService->generateBoxIp($ipBase);
-
         $repositoryOwner = $input->getArgument('repositoryOwner');
         $repository = $input->getArgument('repository');
         $baseBranch = $input->getArgument('baseBranch');
         $prNumber = $input->getArgument('prNumber');
+        $boxName = $vagrantService->generateBoxName();
 
         $id = $metaStorageService->addBox($boxName, $repositoryOwner, $repository, $baseBranch, $prNumber);
 
@@ -86,6 +81,10 @@ class UpCommand extends Command
         $metaStorageService->setBoxStatus($id, BoxStatus::STATUS_MERGING);
         $vcsRepositoryService->pullInPullRequest($boxName, $baseBranch, $prUrl, $prBranch);
 
+        $configurationReaderService = new YamlConfigReaderService(__DIR__ . '/' . $boxName);
+        $ipBase = $configurationReaderService->getIpBase();
+        $boxIp = $vagrantService->generateBoxIp($ipBase);
+
         $output->writeln("<info>Getting the vagrant box up and running on IP: $boxIp</info>");
         $metaStorageService->setBoxStatus($id, BoxStatus::STATUS_BOOTING);
         $vagrantService->vagrantUp($boxName, $boxIp);
@@ -104,25 +103,5 @@ class UpCommand extends Command
     protected function getPRBranchFromPRInfo($prInfoOutput)
     {
         return $prInfoOutput->head->ref;
-    }
-
-    /**
-     * @param ConfigReaderService $configurationReaderService
-     * @param $boxIp
-     * @param $id
-     */
-    protected function notify(ConfigReaderService $configurationReaderService, $boxIp, $id)
-    {
-        $notificationServiceConfiguration = $configurationReaderService->getNotificationService();
-        if ($notificationServiceConfiguration === false) {
-            return;
-        }
-
-        $notificationService = NotificationServiceFactory::generate(
-            $notificationServiceConfiguration['serviceName'],
-            $notificationServiceConfiguration['serviceConfiguration']
-        );
-
-        $notificationService->notify("Box is up at: http://$boxIp with ID: $id");
     }
 }
