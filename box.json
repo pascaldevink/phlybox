@@ -24,6 +24,16 @@
             "in": "vendor"
         }
     ],
+    "finder-bin": [
+        {
+            "name": "*.pem",
+            "in": "vendor"
+        },
+        {
+            "name": "*.md5",
+            "in": "vendor"
+        }
+    ],
     "git-version": "package_version",
     "main": "bin/phlybox",
     "output": "phlybox.phar",
