@@ -25,7 +25,7 @@ class NotificationServiceFactory
                 return new SlackNotificationService(
                     $configuration['slack_team'],
                     $configuration['slack_token'],
-                    $configuration['slack_channel'],
+                    '#' . $configuration['slack_channel'],
                     $configuration['slack_username']
                 );
                 break;
