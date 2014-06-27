@@ -4,9 +4,16 @@ namespace pascaldevink\Phlybox\Service;
 
 use Leth\IPAddress\IP\Address;
 use Leth\IPAddress\IP\NetworkAddress;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\Process\Process;
 
 class VagrantService
 {
+    /**
+     * @var LoggerInterface
+     */
+    private $logger;
+
     public function generateBoxName()
     {
         return time();
@@ -32,13 +39,31 @@ class VagrantService
     public function vagrantUp($boxName, $boxIp)
     {
         $command = "cd $boxName && IP=$boxIp vagrant up --provision";
-        system($command);
+
+        $process = new Process($command);
+        $process->setTimeout(null);
+        $process->run(function ($type, $buffer) {
+            echo $buffer;
+
+            if ($this->logger) {
+                $this->logger->debug($buffer);
+            }
+
+            flush();
+        });
     }
 
     public function vagrantHalt($boxName)
     {
         $command = "cd $boxName && vagrant halt";
-        system($command);
+
+        $process = new Process($command);
+        $process->setTimeout(null);
+        $process->run(function ($type, $buffer) {
+            echo $buffer;
+
+            flush();
+        });
     }
 
     protected function generateRandomIp($start, $end)
@@ -87,5 +112,13 @@ class VagrantService
         }
 
         return implode(".", $arrIp);
+    }
+
+    /**
+     * @param \Psr\Log\LoggerInterface $logger
+     */
+    public function setLogger($logger)
+    {
+        $this->logger = $logger;
     }
 }
