@@ -1,6 +1,6 @@
 <?php
 
-namespace pascaldevink\Phlybox\Service;
+namespace pascaldevink\Phlybox\Service\Configuration;
 
 interface ConfigReaderService
 {

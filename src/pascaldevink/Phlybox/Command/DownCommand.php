@@ -9,8 +9,8 @@ use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use pascaldevink\Phlybox\Service\SqliteStorageService;
-use pascaldevink\Phlybox\Service\VagrantService;
+use pascaldevink\Phlybox\Service\Storage\SqliteStorageService;
+use pascaldevink\Phlybox\Service\Virtualisation\VagrantService;
 
 class DownCommand extends Command
 {

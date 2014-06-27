@@ -1,6 +1,6 @@
 <?php
 
-namespace pascaldevink\Phlybox\Service;
+namespace pascaldevink\Phlybox\Service\Virtualisation;
 
 use Leth\IPAddress\IP\Address;
 use Leth\IPAddress\IP\NetworkAddress;

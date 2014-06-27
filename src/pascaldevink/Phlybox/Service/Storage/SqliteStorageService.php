@@ -1,6 +1,8 @@
 <?php
 
-namespace pascaldevink\Phlybox\Service;
+namespace pascaldevink\Phlybox\Service\Storage;
+
+use pascaldevink\Phlybox\Service\BoxStatus;
 
 class SqliteStorageService implements MetaStorageService
 {

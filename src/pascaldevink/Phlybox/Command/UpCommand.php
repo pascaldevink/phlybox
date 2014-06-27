@@ -5,11 +5,12 @@ namespace pascaldevink\Phlybox\Command;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use pascaldevink\Phlybox\Service\BoxStatus;
-use pascaldevink\Phlybox\Service\GithubRepositoryService;
-use pascaldevink\Phlybox\Service\NotificationServiceFactory;
-use pascaldevink\Phlybox\Service\SqliteStorageService;
-use pascaldevink\Phlybox\Service\VagrantService;
-use pascaldevink\Phlybox\Service\YamlConfigReaderService;
+use pascaldevink\Phlybox\Service\Configuration\ConfigReaderService;
+use pascaldevink\Phlybox\Service\VersionControl\GithubRepositoryService;
+use pascaldevink\Phlybox\Service\Notification\NotificationServiceFactory;
+use pascaldevink\Phlybox\Service\Storage\SqliteStorageService;
+use pascaldevink\Phlybox\Service\Virtualisation\VagrantService;
+use pascaldevink\Phlybox\Service\Configuration\YamlConfigReaderService;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Formatter\OutputFormatter;
@@ -89,7 +90,7 @@ class UpCommand extends Command
         $metaStorageService->setBoxStatus($id, BoxStatus::STATUS_MERGING);
         $vcsRepositoryService->pullInPullRequest($boxName, $baseBranch, $prUrl, $prBranch);
 
-        $configurationReaderService = new YamlConfigReaderService($currentDirectory . '/' . $boxName);
+        $configurationReaderService = $this->getProjectConfiguration($currentDirectory, $boxName);
         $ipBase = $configurationReaderService->getIpBase();
         $boxIp = $vagrantService->generateBoxIp($ipBase);
 
@@ -170,5 +171,16 @@ class UpCommand extends Command
         $logger->pushHandler(new StreamHandler($currentDirectory . '/phlybox.log'));
 
         return $logger;
+    }
+
+    /**
+     * @param $currentDirectory
+     * @param $boxName
+     * @return ConfigReaderService
+     */
+    protected function getProjectConfiguration($currentDirectory, $boxName)
+    {
+        $configurationReaderService = new YamlConfigReaderService($currentDirectory . '/' . $boxName);
+        return $configurationReaderService;
     }
 }

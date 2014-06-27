@@ -3,7 +3,7 @@
 namespace pascaldevink\Phlybox\Command;
 
 use pascaldevink\Phlybox\Service\BoxStatus;
-use pascaldevink\Phlybox\Service\SqliteStorageService;
+use pascaldevink\Phlybox\Service\Storage\SqliteStorageService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Formatter\OutputFormatter;
 use Symfony\Component\Console\Formatter\OutputFormatterStyle;
