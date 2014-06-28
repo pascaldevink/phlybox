@@ -1,13 +1,13 @@
 <?php
 
-namespace pascaldevink\Phlybox\Service\Virtualisation;
+namespace pascaldevink\Phlybox\Service\Virtualization;
 
 use Leth\IPAddress\IP\Address;
 use Leth\IPAddress\IP\NetworkAddress;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Process\Process;
 
-class VagrantService
+class VagrantService implements VirtualizationService
 {
     /**
      * @var LoggerInterface
@@ -36,7 +36,7 @@ class VagrantService
         return $boxIp;
     }
 
-    public function vagrantUp($boxName, $boxIp)
+    public function up($boxName, $boxIp)
     {
         $command = "cd $boxName && IP=$boxIp vagrant up --provision";
 
@@ -53,7 +53,7 @@ class VagrantService
         });
     }
 
-    public function vagrantHalt($boxName)
+    public function down($boxName)
     {
         $command = "cd $boxName && vagrant halt";
 
