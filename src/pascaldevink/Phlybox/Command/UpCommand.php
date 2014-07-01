@@ -4,13 +4,10 @@ namespace pascaldevink\Phlybox\Command;
 
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
-use pascaldevink\Phlybox\Service\BoxStatus;
-use pascaldevink\Phlybox\Service\Configuration\ConfigReaderService;
 use pascaldevink\Phlybox\Service\VersionControl\GithubRepositoryService;
-use pascaldevink\Phlybox\Service\Notification\NotificationServiceFactory;
 use pascaldevink\Phlybox\Service\Storage\SqliteStorageService;
-use pascaldevink\Phlybox\Service\Virtualisation\VagrantService;
-use pascaldevink\Phlybox\Service\Configuration\YamlConfigReaderService;
+use pascaldevink\Phlybox\Service\Virtualization\VagrantService;
+use pascaldevink\Phlybox\Service\Workflow\UpService;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Formatter\OutputFormatter;
@@ -18,10 +15,16 @@ use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\EventDispatcher\Event;
+use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Process\Process;
 
-class UpCommand extends Command
+class UpCommand extends Command implements EventSubscriberInterface
 {
+    /** @var OutputInterface */
+    private $output;
+
     protected function configure()
     {
         $this
@@ -52,13 +55,15 @@ class UpCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->output = $output;
+
         $currentDirectory = $this->getCurrentWorkingDirectory();
 
         $logger = $this->createLogger($currentDirectory);
 
         $vcsRepositoryService = new GithubRepositoryService();
-        $vagrantService = new VagrantService();
-        $vagrantService->setLogger($logger);
+        $virtualizationService = new VagrantService();
+        $virtualizationService->setLogger($logger);
         $metaStorageService = new SqliteStorageService();
 
         $output->setDecorated(true);
@@ -70,83 +75,25 @@ class UpCommand extends Command
         $repository = $input->getArgument('repository');
         $baseBranch = $input->getArgument('baseBranch');
         $prNumber = $input->getArgument('prNumber');
-        $boxName = $vagrantService->generateBoxName();
+        $boxName = $virtualizationService->generateBoxName();
 
-        $id = $metaStorageService->addBox($boxName, $repositoryOwner, $repository, $baseBranch, $prNumber);
-
-        $output->writeln('<info>Cloning...</info>');
-        $metaStorageService->setBoxStatus($id, BoxStatus::STATUS_CLONING);
-        $vcsRepositoryService->checkoutRepository($repositoryOwner, $repository, $boxName);
-
-        $output->writeln('<info>Branching...</info>');
-        $vcsRepositoryService->setRepositoryBranch($boxName, $baseBranch);
-
-        $output->writeln('<info>Getting PR Info...</info>');
-        $prInfoOutput = $vcsRepositoryService->getInfoForPullRequest($repositoryOwner, $repository, $prNumber);
-        $prUrl = $this->getPRUrlFromPRInfo($prInfoOutput);
-        $prBranch = $this->getPRBranchFromPRInfo($prInfoOutput);
-
-        $output->writeln('<info>Pulling...</info>');
-        $metaStorageService->setBoxStatus($id, BoxStatus::STATUS_MERGING);
-        $vcsRepositoryService->pullInPullRequest($boxName, $baseBranch, $prUrl, $prBranch);
-
-        $configurationReaderService = $this->getProjectConfiguration($currentDirectory, $boxName);
-        $ipBase = $configurationReaderService->getIpBase();
-        $boxIp = $vagrantService->generateBoxIp($ipBase);
-
-        $notificationServiceConfiguration = $configurationReaderService->getNotificationService();
-        if ($notificationServiceConfiguration !== false) {
-            $this->notifyStarted($notificationServiceConfiguration, $boxIp, $id);
-        }
-
-        $output->writeln("<info>Getting the vagrant box up and running on IP: $boxIp</info>");
-        $metaStorageService->setBoxStatus($id, BoxStatus::STATUS_BOOTING);
-        $vagrantService->vagrantUp($boxName, $boxIp);
-
-        $metaStorageService->setBoxStatus($id, BoxStatus::STATUS_READY);
-        $output->writeln("<info>Box is up at: http://$boxIp with ID: $id</info>");
-
-        if ($notificationServiceConfiguration !== false) {
-            $this->notifyUp($notificationServiceConfiguration, $boxIp, $id);
-        }
-    }
-
-    protected function getPRUrlFromPRInfo($prInfoOutput)
-    {
-        return $prInfoOutput->head->repo->ssh_url;
-    }
-
-    protected function getPRBranchFromPRInfo($prInfoOutput)
-    {
-        return $prInfoOutput->head->ref;
-    }
-
-    /**
-     * @param array $notificationServiceConfiguration
-     */
-    protected function notifyStarted(array $notificationServiceConfiguration)
-    {
-        $notificationService = NotificationServiceFactory::generate(
-            $notificationServiceConfiguration['serviceName'],
-            $notificationServiceConfiguration['serviceConfiguration']
+        $upService = new UpService(
+            $boxName,
+            $repositoryOwner,
+            $repository,
+            $baseBranch,
+            $prNumber,
+            $currentDirectory,
+            $metaStorageService,
+            $vcsRepositoryService,
+            $virtualizationService
         );
 
-        $notificationService->notify("Cloned the repository, now starting the box...");
-    }
+        $eventDispatcher = new EventDispatcher();
+        $eventDispatcher->addSubscriber($this);
+        $upService->setEventDispatcher($eventDispatcher);
 
-    /**
-     * @param array $notificationServiceConfiguration
-     * @param string $boxIp
-     * @param int $id
-     */
-    protected function notifyUp(array $notificationServiceConfiguration, $boxIp, $id)
-    {
-        $notificationService = NotificationServiceFactory::generate(
-            $notificationServiceConfiguration['serviceName'],
-            $notificationServiceConfiguration['serviceConfiguration']
-        );
-
-        $notificationService->notify("Box is up at: http://$boxIp with ID: $id");
+        $upService->go();
     }
 
     /**
@@ -174,13 +121,39 @@ class UpCommand extends Command
     }
 
     /**
-     * @param $currentDirectory
-     * @param $boxName
-     * @return ConfigReaderService
+     * Returns an array of event names this subscriber wants to listen to.
+     *
+     * The array keys are event names and the value can be:
+     *
+     *  * The method name to call (priority defaults to 0)
+     *  * An array composed of the method name to call and the priority
+     *  * An array of arrays composed of the method names to call and respective
+     *    priorities, or 0 if unset
+     *
+     * For instance:
+     *
+     *  * array('eventName' => 'methodName')
+     *  * array('eventName' => array('methodName', $priority))
+     *  * array('eventName' => array(array('methodName1', $priority), array('methodName2'))
+     *
+     * @return array The event names to listen to
+     *
+     * @api
      */
-    protected function getProjectConfiguration($currentDirectory, $boxName)
+    public static function getSubscribedEvents()
     {
-        $configurationReaderService = new YamlConfigReaderService($currentDirectory . '/' . $boxName);
-        return $configurationReaderService;
+        return array(
+            'CloningRepository' => 'notifyUser',
+            'SettingBaseBranchOnRepository' => 'notifyUser',
+            'GettingPullRequestInformation' => 'notifyUser',
+            'PullingPullRequestIntoRepository' => 'notifyUser',
+            'StartingVirtualisation' => 'notifyUser',
+            'VirtualisationIsDone' => 'notifyUser',
+        );
+    }
+
+    public function notifyUser(Event $event, $eventName)
+    {
+        $this->output->writeln("<info>$eventName</info>");
     }
 }
