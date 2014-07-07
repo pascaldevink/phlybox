@@ -73,6 +73,7 @@ class DownCommand extends Command implements EventSubscriberInterface
      */
     public static function getSubscribedEvents()
     {
+        // Move this
         return array(
             'BringingBoxDown' => 'notifyUser',
             'BoxIsDown' => 'notifyUser',

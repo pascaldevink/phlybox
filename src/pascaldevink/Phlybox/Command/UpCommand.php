@@ -142,6 +142,7 @@ class UpCommand extends Command implements EventSubscriberInterface
      */
     public static function getSubscribedEvents()
     {
+        // Move this
         return array(
             'CloningRepository' => 'notifyUser',
             'SettingBaseBranchOnRepository' => 'notifyUser',
