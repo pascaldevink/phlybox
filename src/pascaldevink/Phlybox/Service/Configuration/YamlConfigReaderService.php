@@ -2,7 +2,10 @@
 
 namespace pascaldevink\Phlybox\Service\Configuration;
 
-use Symfony\Component\Yaml\Parser;
+use Gaufrette\Adapter\Local;
+use Gaufrette\Filesystem;
+use Puzzle\Configuration\Yaml;
+use Puzzle\Configuration;
 
 class YamlConfigReaderService implements ConfigReaderService
 {
@@ -14,16 +17,19 @@ class YamlConfigReaderService implements ConfigReaderService
     }
 
     /**
-     * Returns all configuration options as an array.
+     * Returns a configuration object based on the yaml configuration in the working directory. @see __construct
      *
-     * @return array
+     * @return Configuration
      */
     public function getConfiguration()
     {
-        $yaml = new Parser();
-        $value = $yaml->parse(file_get_contents($this->workingDirectory . '/phlybox.yml'));
+        $fileSystem = new Filesystem(
+            new Local($this->workingDirectory)
+        );
+        $config = new Yaml($fileSystem);
 
-        return $value;
+
+        return $config;
     }
 
     /**

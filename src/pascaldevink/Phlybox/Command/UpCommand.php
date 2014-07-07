@@ -17,6 +17,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\EventDispatcher\Event;
 use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Process\Process;
 
@@ -24,6 +25,28 @@ class UpCommand extends Command implements EventSubscriberInterface
 {
     /** @var OutputInterface */
     private $output;
+
+    /** @var LoggerInterface */
+    private $logger;
+
+    /** @var string */
+    private $currentWorkingDirectory;
+
+    /** @var EventDispatcherInterface */
+    private $eventDispatcher;
+
+    public function __construct(
+        $currentWorkingDirectory,
+        EventDispatcherInterface $eventDispatcher,
+        LoggerInterface $logger
+    )
+    {
+        parent::__construct();
+
+        $this->currentWorkingDirectory = $currentWorkingDirectory;
+        $this->eventDispatcher = $eventDispatcher;
+        $this->logger = $logger;
+    }
 
     protected function configure()
     {
@@ -57,13 +80,9 @@ class UpCommand extends Command implements EventSubscriberInterface
     {
         $this->output = $output;
 
-        $currentDirectory = $this->getCurrentWorkingDirectory();
-
-        $logger = $this->createLogger($currentDirectory);
-
         $vcsRepositoryService = new GithubRepositoryService();
         $virtualizationService = new VagrantService();
-        $virtualizationService->setLogger($logger);
+        $virtualizationService->setLogger($this->logger);
         $metaStorageService = new SqliteStorageService();
 
         $output->setDecorated(true);
@@ -83,41 +102,16 @@ class UpCommand extends Command implements EventSubscriberInterface
             $repository,
             $baseBranch,
             $prNumber,
-            $currentDirectory,
+            $this->currentWorkingDirectory,
             $metaStorageService,
             $vcsRepositoryService,
             $virtualizationService
         );
 
-        $eventDispatcher = new EventDispatcher();
-        $eventDispatcher->addSubscriber($this);
-        $upService->setEventDispatcher($eventDispatcher);
+        $this->eventDispatcher->addSubscriber($this);
+        $upService->setEventDispatcher($this->eventDispatcher);
 
         $upService->go();
-    }
-
-    /**
-     * @return string
-     */
-    protected function getCurrentWorkingDirectory()
-    {
-        $process = new Process("pwd");
-        $process->run();
-        $currentDirectory = trim($process->getOutput());
-        return $currentDirectory;
-    }
-
-    /**
-     * @param $currentDirectory
-     *
-     * @return LoggerInterface
-     */
-    protected function createLogger($currentDirectory)
-    {
-        $logger = new Logger("phlybox");
-        $logger->pushHandler(new StreamHandler($currentDirectory . '/phlybox.log'));
-
-        return $logger;
     }
 
     /**
@@ -142,6 +136,7 @@ class UpCommand extends Command implements EventSubscriberInterface
      */
     public static function getSubscribedEvents()
     {
+        // Move this
         return array(
             'CloningRepository' => 'notifyUser',
             'SettingBaseBranchOnRepository' => 'notifyUser',

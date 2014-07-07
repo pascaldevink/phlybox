@@ -19,7 +19,10 @@
         "guzzle/guzzle": "3.8.*@dev",
         "symfony/yaml": "2.4.*",
         "monolog/monolog": "1.9.*",
-        "leth/ip-address": "1.*"
+        "leth/ip-address": "1.*",
+        "puzzle/configuration": "1.4.*",
+        "phpspec/phpspec": "~2.0",
+        "pimple/pimple": "~2.1"
     },
     "autoload": {
         "psr-0": { "pascaldevink\\Phlybox\\": "src" }

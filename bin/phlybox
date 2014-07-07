@@ -8,13 +8,84 @@ if (PHP_SAPI !== 'cli') {
 
 require_once(dirname(__DIR__) . '/vendor/autoload.php');
 
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
 use pascaldevink\Phlybox\Command\DownCommand;
 use pascaldevink\Phlybox\Command\CurrentCommand;
 use pascaldevink\Phlybox\Command\UpCommand;
+use pascaldevink\Phlybox\Configuration\ConfigurationContainer;
+use Pimple\Container;
 use Symfony\Component\Console\Application;
+use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\Process\Process;
+
+$container = new Container();
+
+// Parameters
+$container['current_working_directory'] = function() {
+    $process = new Process("pwd");
+    $process->run();
+    $currentDirectory = trim($process->getOutput());
+    return $currentDirectory;
+};
+
+$container['logfile_name'] = 'phlybox.log';
+$container['notification_configuration_listeners'] = array(
+    'pascaldevink\Phlybox\Configuration\Listener\Notification\SlackNotificatonConfigurationListener',
+);
+
+// Services
+$container['logger'] = function($container) {
+    $logger = new Logger("phlybox");
+    $logger->pushHandler(
+        new StreamHandler(
+            $container['current_working_directory'] .
+            PATH_SEPARATOR .
+            $container['logfile_name']
+        )
+    );
+    return $logger;
+};
+
+$container['event_dispatcher'] = function($container) {
+    $eventDispatcher = new EventDispatcher();
+
+    foreach($container['notification_configuration_listeners'] as $notificationConfigurationListener)
+    $eventDispatcher->addListener(
+        ConfigurationContainer::CONFIG_EVENT_NOTIFICATIONS,
+        array(
+            new $notificationConfigurationListener(),
+            'onConfigurationEvent',
+        )
+    );
+
+    return $eventDispatcher;
+};
+
+$container['command_up'] = function($container) {
+    return new UpCommand(
+        $container['current_working_directory'],
+        $container['event_dispatcher'],
+        $container['logger']
+    );
+};
+
+$container['command_down'] = function($container) {
+    return new DownCommand();
+};
+
+$container['command_current'] = function($container) {
+    return new CurrentCommand();
+};
 
 $application = new Application('Phlybox', '1.0-DEV');
-$application->add(new UpCommand());
-$application->add(new DownCommand());
-$application->add(new CurrentCommand());
+
+foreach($container->keys() as $key) {
+    if (strpos($key, 'command') !== 0) {
+        continue;
+    }
+
+    $application->add($container[$key]);
+}
+
 $application->run();

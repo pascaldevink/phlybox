@@ -2,13 +2,18 @@
 
 namespace pascaldevink\Phlybox\Service\Workflow;
 
+use Gaufrette\Adapter\Local;
+use Gaufrette\Filesystem;
+use pascaldevink\Phlybox\Configuration\ConfigurationContainer;
+use pascaldevink\Phlybox\Configuration\Model\Configuration;
+use pascaldevink\Phlybox\Configuration\Model\Notification\NotificationConfiguration;
 use pascaldevink\Phlybox\Service\BoxStatus;
-use pascaldevink\Phlybox\Service\Configuration\ConfigReaderService;
-use pascaldevink\Phlybox\Service\Configuration\YamlConfigReaderService;
 use pascaldevink\Phlybox\Service\Notification\NotificationServiceFactory;
 use pascaldevink\Phlybox\Service\Storage\MetaStorageService;
 use pascaldevink\Phlybox\Service\VersionControl\VCSRepositoryService;
 use pascaldevink\Phlybox\Service\Virtualization\VirtualizationService;
+use Puzzle\Configuration\Yaml;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Process\Process;
 
@@ -113,13 +118,13 @@ class UpService implements WorkflowCommand
             $prUrl,
             $prBranch);
 
-        $configurationReaderService = $this->getProjectConfiguration($this->workingDirectory, $this->boxName);
-        $ipBase = $configurationReaderService->getIpBase();
+        $configuration = $this->getProjectConfiguration($this->workingDirectory, $this->boxName);
+        $ipBase = $configuration->getIpBase();
         $boxIp = $this->virtualisationService->generateBoxIp($ipBase);
 
-        $notificationServiceConfiguration = $configurationReaderService->getNotificationService();
-        if ($notificationServiceConfiguration !== false) {
-            $this->notifyStarted($notificationServiceConfiguration, $boxIp, $id);
+        $notificationConfiguration = $configuration->getNotificationConfiguration();
+        if ($notificationConfiguration !== false) {
+            $this->notifyStarted($notificationConfiguration, $boxIp, $id);
         }
 
         $this->eventDispatcher->dispatch('StartingVirtualisation');
@@ -129,8 +134,8 @@ class UpService implements WorkflowCommand
         $this->metaStorageService->setBoxStatus($id, BoxStatus::STATUS_READY);
         $this->eventDispatcher->dispatch('VirtualisationIsDone');
 
-        if ($notificationServiceConfiguration !== false) {
-            $this->notifyUp($notificationServiceConfiguration, $boxIp, $id);
+        if ($notificationConfiguration !== false) {
+            $this->notifyUp($notificationConfiguration, $boxIp, $id);
         }
     }
 
@@ -145,29 +150,23 @@ class UpService implements WorkflowCommand
     }
 
     /**
-     * @param array $notificationServiceConfiguration
+     * @param NotificationConfiguration $notificationConfiguration
      */
-    protected function notifyStarted(array $notificationServiceConfiguration)
+    protected function notifyStarted(NotificationConfiguration $notificationConfiguration)
     {
-        $notificationService = NotificationServiceFactory::generate(
-            $notificationServiceConfiguration['serviceName'],
-            $notificationServiceConfiguration['serviceConfiguration']
-        );
+        $notificationService = NotificationServiceFactory::generate($notificationConfiguration);
 
         $notificationService->notify("Cloned the repository, now starting the box...");
     }
 
     /**
-     * @param array $notificationServiceConfiguration
+     * @param NotificationConfiguration $notificationConfiguration
      * @param string $boxIp
      * @param int $id
      */
-    protected function notifyUp(array $notificationServiceConfiguration, $boxIp, $id)
+    protected function notifyUp($notificationConfiguration, $boxIp, $id)
     {
-        $notificationService = NotificationServiceFactory::generate(
-            $notificationServiceConfiguration['serviceName'],
-            $notificationServiceConfiguration['serviceConfiguration']
-        );
+        $notificationService = NotificationServiceFactory::generate($notificationConfiguration);
 
         $notificationService->notify("Box is up at: http://$boxIp with ID: $id");
     }
@@ -175,12 +174,15 @@ class UpService implements WorkflowCommand
     /**
      * @param $currentDirectory
      * @param $boxName
-     * @return ConfigReaderService
+     * @return Configuration
      */
     protected function getProjectConfiguration($currentDirectory, $boxName)
     {
-        $configurationReaderService = new YamlConfigReaderService($currentDirectory . '/' . $boxName);
-        return $configurationReaderService;
+        $configurationContainer = new ConfigurationContainer($this->eventDispatcher);
+        $rawConfiguration = new Yaml(new Filesystem(new Local($currentDirectory . '/' . $boxName)));
+        $configuration = $configurationContainer->get($rawConfiguration);
+
+        return $configuration;
     }
 
     /**
