@@ -17,15 +17,6 @@ class ConfigurationContainer
     public function __construct(EventDispatcherInterface $eventDispatcher)
     {
         $this->eventDispatcher = $eventDispatcher;
-
-        // Move this
-        $this->eventDispatcher->addListener(
-            self::CONFIG_EVENT_NOTIFICATIONS,
-            array(
-                new SlackNotificatonConfigurationListener(),
-                'onConfigurationEvent',
-            )
-        );
     }
 
     public function get(RawConfiguration $rawConfiguration)
