@@ -178,8 +178,7 @@ class UpService implements WorkflowCommand
      */
     protected function getProjectConfiguration($currentDirectory, $boxName)
     {
-        $eventDispatcher = new EventDispatcher();
-        $configurationContainer = new ConfigurationContainer($eventDispatcher);
+        $configurationContainer = new ConfigurationContainer($this->eventDispatcher);
         $rawConfiguration = new Yaml(new Filesystem(new Local($currentDirectory . '/' . $boxName)));
         $configuration = $configurationContainer->get($rawConfiguration);
 
